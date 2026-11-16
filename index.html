@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bridge Talk 카드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* 배치: 첫 화면은 크림색 바탕에 파스텔 무늬, 색을 고르면 바탕이 그 색으로 바뀜 */
+  --bg:#fff5ea;
+  --ink:#252a63;
+  --ink-soft:#5d6296;
+  --title:#d6249a;
+  --yellow:#f9d15c;
+  --pink:#f5a0c6;
+  --blue:#9db2f0;
+  --paper:#ffffff;
+  --display:"Fredoka","Jua","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --font:"Jua","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);transition:background-color .6s ease;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+body[data-deck="yellow"]{--bg:#fbd661;--title:#e8750a;--veil:rgba(226,124,8,.86)}
+body[data-deck="pink"]{--bg:#f293bd;--title:#c2187f;--veil:rgba(190,40,125,.84)}
+body[data-deck="blue"]{--bg:#8fa9ee;--title:#2a3aa8;--veil:rgba(44,58,160,.84)}
+#bgc{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;transition:opacity .35s ease}
+#home,#spread{position:relative;z-index:1}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:4px}
+[hidden]{display:none !important}
+
+/* ---------- 첫 화면 ---------- */
+#home{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(30px,6vh,60px);padding:32px 16px}
+.head{display:flex;flex-direction:column;align-items:center;gap:12px}
+#home h1{margin:0;font-family:var(--display);font-weight:600;font-size:clamp(44px,10vw,84px);line-height:1;letter-spacing:.01em;color:var(--title);text-align:center;text-shadow:0 3px 0 #fff, 0 6px 0 rgba(214,36,154,.15)}
+#home p{margin:0;color:var(--ink);font-size:clamp(15px,2.6vw,20px);background:var(--paper);padding:8px 20px;border-radius:999px;box-shadow:0 3px 0 rgba(37,42,99,.12)}
+.decks{display:flex;gap:clamp(14px,4.5vw,56px);justify-content:center;align-items:flex-start;width:100%;max-width:780px}
+.deck{flex:1 1 0;max-width:200px;display:flex;flex-direction:column;align-items:center;gap:20px;animation:bob 3.2s ease-in-out infinite alternate}
+.deck:nth-child(2){animation-delay:-1.1s}
+.deck:nth-child(3){animation-delay:-2.2s}
+@keyframes bob{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+.pile{position:relative;width:100%;aspect-ratio:600/955;transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
+.pile i,.pile img{position:absolute;inset:0;width:100%;height:100%;border-radius:9%;border:3px solid #fff;box-shadow:0 8px 18px rgba(37,42,99,.22)}
+.pile i{background:var(--c)}
+.pile i:nth-child(1){transform:translate(8%,4%) rotate(7deg)}
+.pile i:nth-child(2){transform:translate(-5%,2%) rotate(-5deg);filter:brightness(1.06)}
+.pile img{object-fit:cover;display:block}
+.deck:hover .pile,.deck:focus-visible .pile{transform:translateY(-8px) scale(1.05) rotate(-3deg)}
+.deck span{font-size:clamp(16px,3vw,22px);padding:7px 20px;border-radius:999px;background:var(--c);color:var(--ink);border:3px solid #fff;box-shadow:0 3px 0 rgba(37,42,99,.14)}
+
+/* ---------- 펼친 화면 ---------- */
+#spread{min-height:100%;display:flex;flex-direction:column}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px}
+.bar h2{margin:0;font-weight:400;font-size:clamp(20px,3.8vw,30px);color:var(--ink);text-align:center}
+.pill{padding:10px 18px;border-radius:999px;background:var(--paper);color:var(--ink);font-size:clamp(14px,2.4vw,17px);white-space:nowrap;box-shadow:0 3px 0 rgba(37,42,99,.18);transition:transform .15s ease}
+.pill:hover{transform:translateY(-2px)}
+.pill:active{transform:translateY(1px)}
+.hint{margin:0;text-align:center;color:var(--ink);font-size:clamp(14px,2.4vw,18px);padding:2px 16px 8px}
+#stage{position:relative;width:100%;flex:0 0 auto}
+.card{position:absolute;left:0;top:0;transition:transform .7s cubic-bezier(.2,.8,.2,1);will-change:transform}
+.card .lift{display:block;width:100%;height:100%;border-radius:9%;background:var(--back) center/cover;box-shadow:0 0 0 2px #fff, 0 5px 12px rgba(37,42,99,.3);transition:transform .2s cubic-bezier(.3,1.6,.5,1), box-shadow .2s ease}
+.card:hover .lift,.card:focus-visible .lift{transform:translateY(-16%);box-shadow:0 0 0 3px #fff, 0 16px 26px rgba(37,42,99,.38)}
+.card:focus-visible{outline:none}
+.card.away{visibility:hidden}
+
+/* ---------- 크게 보는 카드 ---------- */
+#scrim{position:fixed;inset:0;background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 52%), var(--veil, rgba(37,42,99,.7));opacity:0;transition:opacity .45s ease;z-index:100}
+#scrim.on{opacity:1}
+#big{position:fixed;z-index:102;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.2,.75,.2,1);cursor:pointer}
+#big .face{position:absolute;inset:0;border-radius:7%;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:center/cover;box-shadow:0 0 0 4px #fff, 0 22px 50px rgba(20,22,60,.45)}
+#big .front{transform:rotateY(180deg);background-color:#fff}
+#closeTip{position:fixed;left:0;right:0;bottom:16px;text-align:center;color:#fff;font-size:16px;z-index:103;pointer-events:none;text-shadow:0 1px 3px rgba(37,42,99,.45)}
+#fx{position:fixed;inset:0;width:100%;height:100%;z-index:104;pointer-events:none}
+
+@media (prefers-reduced-motion:reduce){
+  .card,#big,#scrim,.pile,.card .lift,body{transition-duration:.01s !important;transition-delay:0s !important}
+  .deck{animation:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="bgc" aria-hidden="true"></canvas>
+
+<main id="home">
+  <div class="head">
+    <h1>Bridge Talk</h1>
+    <p>카드 색을 하나 골라 주세요</p>
+  </div>
+  <div class="decks">
+    <button class="deck" data-deck="yellow" style="--c:var(--yellow)"><div class="pile"><i></i><i></i><img src="img/yellow-back.webp" alt=""></div><span>노란색</span></button>
+    <button class="deck" data-deck="pink" style="--c:var(--pink)"><div class="pile"><i></i><i></i><img src="img/pink-back.webp" alt=""></div><span>분홍색</span></button>
+    <button class="deck" data-deck="blue" style="--c:var(--blue)"><div class="pile"><i></i><i></i><img src="img/blue-back.webp" alt=""></div><span>파란색</span></button>
+  </div>
+</main>
+
+<section id="spread" hidden>
+  <div class="bar">
+    <button class="pill" id="backBtn">← 색 고르기</button>
+    <h2 id="deckName"></h2>
+    <button class="pill" id="shuffleBtn">다시 섞기</button>
+  </div>
+  <p class="hint">마음이 가는 카드를 한 장 눌러 보세요</p>
+  <div id="stage"></div>
+</section>
+
+<div id="scrim" hidden></div>
+<div id="big" hidden role="button" tabindex="0" aria-label="카드 닫기"><div class="face back"></div><div class="face front"></div></div>
+<canvas id="fx" hidden aria-hidden="true"></canvas>
+<div id="closeTip" hidden>화면을 누르면 카드가 제자리로 돌아갑니다</div>
+
+<script>
+(function(){
+  var N = 30, RATIO = 955/600;
+  var NAMES = {yellow:'노란색 카드', pink:'분홍색 카드', blue:'파란색 카드'};
+  var $ = function(id){ return document.getElementById(id); };
+  var home = $('home'), spread = $('spread'), stage = $('stage');
+  var scrim = $('scrim'), big = $('big'), closeTip = $('closeTip');
+  var deck = null, cards = [], openCard = null, busy = false;
+
+  /* 바탕 무늬: 카드 뒷면처럼 꼬불꼬불한 선, 동그라미, 세모 */
+  var bgc = $('bgc'), PAL = {
+    home:['#f7a8c8','#a9c7f0','#f8d477','#b5dfcf','#cdb8ec','#f6b39b'],
+    yellow:['#fff6d2','#ffffff','#f7ae2b','#ffe99e'],
+    pink:['#ffd6e8','#ffffff','#ea6fa6','#ffc2da'],
+    blue:['#cdd9fc','#ffffff','#6c86dc','#b6c6f7']
+  };
+  function drawBg(){
+    var W = window.innerWidth, H = window.innerHeight, d = Math.min(window.devicePixelRatio || 1, 2);
+    bgc.width = W * d; bgc.height = H * d;
+    var g = bgc.getContext('2d'); g.scale(d, d); g.lineCap = 'round'; g.lineJoin = 'round';
+    var pal = PAL[deck || 'home'], seed = 7;
+    function r(){ seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    var cell = W < 600 ? 120 : 165, cols = Math.ceil(W / cell), rows = Math.ceil(H / cell);
+    for (var y = 0; y < rows; y++) for (var x = 0; x < cols; x++){
+      var cx = (x + 0.2 + r() * 0.6) * cell, cy = (y + 0.2 + r() * 0.6) * cell, k = cell / 165;
+      var sz = (16 + r() * 22) * k, type = Math.floor(r() * 5), col = pal[Math.floor(r() * pal.length)];
+      g.save(); g.translate(cx, cy); g.rotate(r() * 6.28);
+      g.globalAlpha = deck ? 0.5 : 0.6; g.strokeStyle = col; g.fillStyle = col; g.lineWidth = (7 + r() * 4) * k;
+      g.beginPath();
+      if (type === 0){ for (var t = 0; t <= 1.001; t += 0.04){ var px = (t - 0.5) * sz * 3.4, py = Math.sin(t * 9.4) * sz * 0.55; if (t === 0) g.moveTo(px, py); else g.lineTo(px, py); } g.stroke(); }
+      else if (type === 1){ g.arc(0, 0, sz * 0.75, 0, 6.29); g.stroke(); }
+      else if (type === 2){ g.moveTo(0, -sz * 0.8); g.lineTo(sz * 0.8, sz * 0.6); g.lineTo(-sz * 0.8, sz * 0.6); g.closePath(); g.stroke(); }
+      else if (type === 3){ g.arc(0, 0, sz * 1.3, 0.3, 2.6); g.stroke(); }
+      else { g.arc(0, 0, sz * 0.28, 0, 6.29); g.fill(); }
+      g.restore();
+    }
+  }
+  function swapBg(){ bgc.style.opacity = 0; setTimeout(function(){ drawBg(); bgc.style.opacity = 1; }, 300); }
+  /* 색종이: 카드가 뒤집힐 때 카드 둘레에서 터져 나와 아래로 떨어진다 */
+  var fx = $('fx'), fxRun = 0;
+  function burst(){
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var W = window.innerWidth, H = window.innerHeight, d = Math.min(window.devicePixelRatio || 1, 2);
+    fx.width = W * d; fx.height = H * d; fx.hidden = false;
+    var g = fx.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0);
+    var r = big.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    var cols = ['#ff5fa8', '#ffd23f', '#4f7df0', '#3fd0a4', '#ffffff', '#ff8a3c', '#b388f5'];
+    var k = Math.max(0.7, Math.min(1.25, W / 900)), ps = [];
+    for (var i = 0; i < 110; i++){
+      var a = Math.random() * 6.283, sp = (380 + Math.random() * 620) * k;
+      ps.push({
+        x: cx + Math.cos(a) * r.width * 0.42, y: cy + Math.sin(a) * r.height * 0.42,
+        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 320 * k,
+        w: (12 + Math.random() * 11) * k, h: (7 + Math.random() * 7) * k,
+        rot: Math.random() * 6.283, vr: (Math.random() - 0.5) * 14,
+        ph: Math.random() * 6.283, fl: 6 + Math.random() * 8,
+        c: cols[i % cols.length], kind: i % 4
+      });
+    }
+    var run = ++fxRun, t0 = performance.now(), last = t0, LIFE = 2100;
+    function frame(now){
+      if (run !== fxRun) return;
+      var dt = Math.min(0.034, (now - last) / 1000), t = now - t0; last = now;
+      g.clearRect(0, 0, W, H);
+      g.globalAlpha = t < LIFE - 600 ? 1 : Math.max(0, (LIFE - t) / 600);
+      for (var i = 0; i < ps.length; i++){
+        var q = ps[i];
+        q.vx *= Math.pow(0.16, dt); q.vy = q.vy * Math.pow(0.3, dt) + 1050 * k * dt;
+        q.x += q.vx * dt + Math.sin(t / 240 + q.ph) * 26 * dt; q.y += q.vy * dt; q.rot += q.vr * dt;
+        g.save(); g.translate(q.x, q.y); g.rotate(q.rot); g.fillStyle = q.c;
+        if (q.kind === 0){ g.beginPath(); g.arc(0, 0, q.h * 0.75, 0, 6.29); g.fill(); }
+        else { g.scale(1, Math.cos(t / 1000 * q.fl + q.ph)); g.fillRect(-q.w / 2, -q.h / 2, q.w, q.h); }
+        g.restore();
+      }
+      if (t < LIFE) requestAnimationFrame(frame); else { g.clearRect(0, 0, W, H); fx.hidden = true; }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function pad(n){ return (n < 10 ? '0' : '') + n; }
+  function shuffled(){
+    var a = []; for (var i = 1; i <= N; i++) a.push(i);
+    for (var j = a.length - 1; j > 0; j--){ var k = Math.floor(Math.random() * (j + 1)); var t = a[j]; a[j] = a[k]; a[k] = t; }
+    return a;
+  }
+
+  /* 화면 크기에 맞춰 몇 줄로 펼칠지, 카드 크기를 얼마로 할지 정한다 */
+  function plan(){
+    var W = stage.clientWidth, side = 18;
+    var H = Math.max(300, window.innerHeight - stage.getBoundingClientRect().top - window.scrollY * 0 - 20);
+    var best = null;
+    [1, 2, 3].forEach(function(rows){
+      var per = Math.ceil(N / rows);
+      var angle = rows === 1 ? 56 : (rows === 2 ? 44 : 36);
+      var minStep = rows === 1 ? 0.3 : 0.42;
+      var sagK = Math.tan(angle / 4 * Math.PI / 180) / 2;
+      var lean = RATIO * Math.sin(angle / 2 * Math.PI / 180);
+      var cw = Math.min(170, (W - side * 2) / (1 + lean + (per - 1) * minStep));
+      var p;
+      for (var guard = 0; guard < 60; guard++){
+        var step = Math.min((W - side * 2 - cw * (1 + lean)) / (per - 1), cw * 0.62);
+        var span = step * (per - 1), ch = cw * RATIO, sag = span * sagK;
+        var rowH = ch + sag + ch * 0.14;
+        p = {rows:rows, per:per, angle:angle, cw:cw, ch:ch, step:step, span:span, sag:sag, rowH:rowH, total:rowH * rows + ch * 0.2};
+        if (p.total <= H || cw <= 58) break;
+        cw *= 0.96;
+      }
+      p.score = p.cw * (rows === 1 ? 1.35 : rows === 2 ? 1.1 : 1);
+      if (!best || p.score > best.score) best = p;
+    });
+    return best;
+  }
+
+  function layout(animateFromStack){
+    if (!cards.length) return;
+    var p = plan(), W = stage.clientWidth;
+    stage.style.height = Math.ceil(p.total) + 'px';
+    var topPad = p.ch * 0.2;
+    cards.forEach(function(c, i){
+      var row = Math.floor(i / p.per), col = i % p.per;
+      var n = Math.min(p.per, N - row * p.per);
+      var a = n > 1 ? (-p.angle / 2 + p.angle * col / (n - 1)) : 0;
+      var rad = a * Math.PI / 180;
+      var R = p.span / (2 * Math.sin(p.angle / 2 * Math.PI / 180));
+      var x = W / 2 + R * Math.sin(rad) - p.cw / 2;
+      var y = topPad + row * p.rowH + R * (1 - Math.cos(rad));
+      c.style.width = p.cw + 'px'; c.style.height = p.ch + 'px';
+      c.style.zIndex = i + 1;
+      c.dataset.rot = a;
+      var t = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) rotate(' + a.toFixed(2) + 'deg)';
+      if (animateFromStack){
+        c.style.transition = 'none';
+        c.style.transform = 'translate(' + (W / 2 - p.cw / 2) + 'px,' + (p.total / 2 - p.ch / 2) + 'px) rotate(' + ((i % 5) - 2) + 'deg)';
+        c.dataset.to = t; c.dataset.delay = (i * 22);
+      } else {
+        c.style.transitionDelay = '0s';
+        c.style.transform = t;
+      }
+    });
+    if (animateFromStack){
+      stage.getBoundingClientRect();
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        cards.forEach(function(c){
+          c.style.transition = ''; c.style.transitionDelay = c.dataset.delay + 'ms'; c.style.transform = c.dataset.to;
+        });
+      }); });
+    }
+  }
+
+  function deal(){
+    stage.innerHTML = ''; cards = [];
+    stage.style.setProperty('--back', 'url(img/' + deck + '-back.webp)');
+    shuffled().forEach(function(n){
+      var b = document.createElement('button');
+      b.className = 'card'; b.dataset.n = n; b.setAttribute('aria-label', '뒤집힌 카드');
+      b.innerHTML = '<span class="lift"></span>';
+      b.addEventListener('click', function(){ open(b); });
+      stage.appendChild(b); cards.push(b);
+      new Image().src = 'img/' + deck + '-' + pad(n) + '.webp';
+    });
+    layout(true);
+  }
+
+  function show(name){
+    if (!NAMES[name]){ deck = null; document.body.removeAttribute('data-deck'); spread.hidden = true; home.hidden = false; swapBg(); return; }
+    deck = name; document.body.setAttribute('data-deck', name);
+    $('deckName').textContent = NAMES[name];
+    home.hidden = true; spread.hidden = false; window.scrollTo(0, 0);
+    swapBg(); deal();
+  }
+
+  /* 작은 카드 자리에서 화면 가운데까지의 이동값 */
+  function fromCard(c, bw, bh){
+    var r = c.getBoundingClientRect();
+    var dx = (r.left + r.width / 2) - window.innerWidth / 2;
+    var dy = (r.top + r.height / 2) - window.innerHeight / 2;
+    var s = parseFloat(c.style.width) / bw;
+    return 'perspective(1400px) translate(' + dx + 'px,' + dy + 'px) rotate(' + c.dataset.rot + 'deg) scale(' + s + ')';
+  }
+
+  function open(c){
+    if (busy || openCard) return;
+    busy = true; openCard = c;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var bw = Math.min(vw * 0.84, (vh * 0.86) / RATIO, 460), bh = bw * RATIO;
+    big.style.width = bw + 'px'; big.style.height = bh + 'px';
+    big.style.left = (vw - bw) / 2 + 'px'; big.style.top = (vh - bh) / 2 + 'px';
+    big.querySelector('.back').style.backgroundImage = 'url(img/' + deck + '-back.webp)';
+    big.querySelector('.front').style.backgroundImage = 'url(img/' + deck + '-' + pad(+c.dataset.n) + '.webp)';
+    var seen = c.classList.contains('seen');
+    big.style.transition = 'none';
+    big.style.transform = fromCard(c, bw, bh) + ' rotateY(' + (seen ? 180 : 0) + 'deg)';
+    scrim.hidden = false; big.hidden = false;
+    c.classList.add('away');
+    big.getBoundingClientRect();
+    requestAnimationFrame(function(){
+      big.style.transition = '';
+      scrim.classList.add('on');
+      if (!seen) setTimeout(burst, 430);
+      big.style.transform = 'perspective(1400px) translate(0px,0px) rotate(0deg) scale(1) rotateY(180deg)';
+      setTimeout(function(){ busy = false; closeTip.hidden = false; big.focus({preventScroll:true}); }, 820);
+    });
+  }
+
+  function close(){
+    if (busy || !openCard) return;
+    busy = true; closeTip.hidden = true;
+    var c = openCard;
+    c.classList.add('seen'); c.setAttribute('aria-label', pad(+c.dataset.n) + '번 카드');
+    c.firstChild.style.backgroundImage = 'url(img/' + deck + '-' + pad(+c.dataset.n) + '.webp)';
+    c.classList.remove('away'); var t = fromCard(c, parseFloat(big.style.width)); c.classList.add('away');
+    big.style.transform = t + ' rotateY(180deg)';
+    scrim.classList.remove('on');
+    setTimeout(function(){
+      big.hidden = true; scrim.hidden = true; c.classList.remove('away');
+      openCard = null; busy = false;
+      try { c.focus({preventScroll:true}); } catch (e) {}
+    }, 800);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.deck'), function(b){
+    b.addEventListener('click', function(){
+      var d = b.dataset.deck;
+      if (location.hash === '#' + d) show(d); else { try { location.hash = d; } catch (e) { show(d); } if (deck !== d) show(d); }
+    });
+  });
+  $('backBtn').addEventListener('click', function(){
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { try { location.hash = ''; } catch (e2) {} }
+    show(null);
+  });
+  $('shuffleBtn').addEventListener('click', function(){ if (!busy && !openCard) deal(); });
+  scrim.addEventListener('click', close);
+  big.addEventListener('click', close);
+  document.addEventListener('keydown', function(e){
+    if (!openCard) return;
+    if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' '){ e.preventDefault(); close(); }
+  });
+  window.addEventListener('hashchange', function(){
+    var h = location.hash.slice(1);
+    if (h !== (deck || '') && !openCard) show(NAMES[h] ? h : null);
+  });
+  var rt; window.addEventListener('resize', function(){ clearTimeout(rt); rt = setTimeout(function(){ drawBg(); if (deck && !openCard) layout(false); }, 120); });
+  drawBg();
+
+  var first = location.hash.slice(1);
+  if (NAMES[first]) show(first);
+})();
+</script>
+</body>
+</html>
